@@ -38,12 +38,6 @@ def clear_connections():
 
 
 if __name__=="__main__":
-    sdbus.set_default_bus(sdbus.sd_bus_open_system())
+    sdbus.set_default_bus(sdbus.sd_bus_open_system()) # set the defult bus to the system bus
     clear_connections()
 
-"""
-We DO want to kill the resin wifi connection.
-
-Deleting connection resin-wifi-01
-Deleting connection spanky
-"""

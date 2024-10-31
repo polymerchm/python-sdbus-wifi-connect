@@ -22,12 +22,6 @@ from sdbus_block.networkmanager import (
     NetworkManager,
     NetworkManagerSettings,
     NetworkManagerConnectionProperties,
-    NetworkDeviceGeneric,
-    DeviceState,
-    DeviceType,
-    DeviceCapabilities as Capabilities,
-    ActiveConnection,
-    ConnectivityState
 )
 import sdbus
 import uuid
