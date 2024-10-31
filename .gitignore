@@ -13,3 +13,4 @@ htmlcov
 .coverage
 hostapd.conf
 rc.local
+.env.global
