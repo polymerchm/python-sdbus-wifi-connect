@@ -1,5 +1,5 @@
 # python-sdbus-wifi-connect
-This is a verions of [python-wifi-connect](https://github.com/OpenAgricultureFoundation/python-wifi-connect.git) that uses the more recent [sdbus-networkmanager](https://github.com/python-sdbus/python-sdbus-networkmanager.git) library
+This is a version of [python-wifi-connect](https://github.com/OpenAgricultureFoundation/python-wifi-connect.git) that uses the more recent [sdbus-networkmanager](https://github.com/python-sdbus/python-sdbus-networkmanager.git) library
 
 Inspired by the [wifi-connect](https://github.com/balena-io/wifi-connect) project written by [balena.io](https://www.balena.io/).  
 
