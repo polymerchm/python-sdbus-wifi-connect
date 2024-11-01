@@ -21,7 +21,7 @@ WiFi Connect interacts with NetworkManager, which should be the active network m
 
 ### 0. Check: Look For Existing Connection
 
-Wifi Connect look to see if it can access the internet when it starts.   If if it can, it shuts itself down.  This can be overridden for test purposes (see **Additions**)
+Wifi Connect looks to see if it can access the internet when it starts.   If it can, it shuts itself down.  This can be overridden for test purposes (see **Additions**)
 
 ### 1. Advertise: Device Creates Access Point
 
@@ -55,13 +55,13 @@ When the network credentials have been entered, WiFi Connect will disable the ac
 
 - To allow for other services to recognize the state of the Raspberry Pi, in hotspot mode, the file:
 
-  - */etc/wifi_state/hotspot*
+>      /etc/wifi_state/hotspot
 
 - exists.  Otherwise, the file
 
-  - */etc/wifi_state/client*
+>      /etc/wifi_state/client
 
-- exists.   This can be used in conjuction with other programs, for instance a  service that launches at startup if the device is hotspot mode and flashes an LED to indicate that state.   The service could monitor the existance of the hostpost file and shut down when it disapears.   Also, using systemd, you can control a service starting using the existance of one or the other file. [See](https://serverfault.com/questions/767415/start-systemd-service-conditionally)
+- exists.   This can be used in conjuction with other programs, for instance a  service that launches at startup if the device is hotspot mode and flashes an LED to indicate that state.   The service could monitor the existance of the hostpost file and shut down when it disapears.   Also, using systemd, you can control a service starting using the existance of one or the other file. For examples [see](https://serverfault.com/questions/767415/start-systemd-service-conditionally).
 
 - Added the -i option to the *http_server.py* program to allow the user to ignore a *eth0* connection while doing 
 development work.  The program will still manipulate the wlan0 connections.
