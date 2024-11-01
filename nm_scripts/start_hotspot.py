@@ -1,15 +1,18 @@
 """
 Start a local hotspot using NetworkManager.
-You do this by sending a dict to AddConnection. 
+You do this by sending a dict to AddConnection (add_connection in python-sdbus). 
 The dict below was generated with n-m dump on an existing connection and then anonymised.
 
-# manually (in base balena OS) add a local hotspot with NO password (open)
-nmcli connection add type wifi ifname wlan0 con-name hotspot autoconnect yes ssid PFC_EDU mode ap
+# manually (in linux) add a local hotspot with NO password (open)
+nmcli connection add type wifi ifname wlan0 con-name dawnlite autoconnect yes ssid dawnliteXXXX mode ap
 nmcli connection modify hotspot 802-11-wireless.mode ap ipv4.method shared 
 nmcli connection up hotspot
 
-# if you want a password on the hotspot, add this to the modify command:
-# 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk 'PASSWORD'
+dawnlite is what is set in the HOTSPOT_BASE entry in the .env.global file and can be changed
+NOTE: XXXX is the last 4 digits of the RPi's serial number
+
+if you want a password on the hotspot, add this to the modify command:
+802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk 'PASSWORD'
 
 
 #
