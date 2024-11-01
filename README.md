@@ -25,7 +25,7 @@ WiFi Connect detects available WiFi networks and opens an access point with a ca
 
 ### 2. Connect: User Connects Phone to Device Access Point
 
-Connect to the opened access point on the device from your mobile phone or laptop. The access point SSID is, by default, `<name>` where "name" is something random like "shy-lake" or "green-frog". 
+Connect to the opened access point on the device from your mobile phone or laptop. The access point SSID is, by default, `<name>` where "name" is something random like "shy-lake" or "green-frog" or "dawnlite" (what is currently in the codebase). 
 
 ### 3. Portal: Phone Shows Captive Portal to User
 
