@@ -11,7 +11,7 @@ For your particular application, replace the logo.svg and favicon.ico files in t
 
 # Install and Run
 
-Please read the [INSTALL.md](INSTALL.md) then the [RUN.md](RUN.md) files.
+Please read the [INSTALL.md](INSTALL.md) then the [RUN.md](RUN.md) files.  Also seee below in **Additions**
 
 
 # How it works
@@ -19,13 +19,17 @@ Please read the [INSTALL.md](INSTALL.md) then the [RUN.md](RUN.md) files.
 
 WiFi Connect interacts with NetworkManager, which should be the active network manager on the device's host OS.
 
+### 0. Check: Look For Existing Connection
+
+Wifi Connect look to see if it can access the internet when it starts.   If if it can, it shuts itself down.  This can be overridden for test purposes (see **Additions**)
+
 ### 1. Advertise: Device Creates Access Point
 
 WiFi Connect detects available WiFi networks and opens an access point with a captive portal. Connecting to this access point with a mobile phone or laptop allows new WiFi credentials to be configured.
 
 ### 2. Connect: User Connects Phone to Device Access Point
 
-Connect to the opened access point on the device from your mobile phone or laptop. The access point SSID is, by default, `<name>` where "name" is something random like "shy-lake" or "green-frog" or "dawnlite" (what is currently in the codebase). 
+Connect to the opened access point on the device from your mobile phone or laptop. The access point SSID is, by default, `<name>` where name is something random like "shy-lake" or "green-frog" or "dawnlite" (what is currently in the codebase). 
 
 ### 3. Portal: Phone Shows Captive Portal to User
 
@@ -57,7 +61,7 @@ When the network credentials have been entered, WiFi Connect will disable the ac
 
   - */etc/wifi_state/client*
 
-- exists
+- exists.   This can be used in conjuction with other programs, for instance a  service that launches at startup if the device is hotspot mode and flashes an LED to indicate that state.   The service could monitor the existance of the hostpost file and shut down when it disapears.   Also, using systemd, you can control a service starting using the existance of one or the other file. [See](https://serverfault.com/questions/767415/start-systemd-service-conditionally)
 
 - Added the -i option to the *http_server.py* program to allow the user to ignore a *eth0* connection while doing 
 development work.  The program will still manipulate the wlan0 connections.
