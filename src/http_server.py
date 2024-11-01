@@ -230,16 +230,16 @@ def RequestHandlerClassFactory(address, ssids):
 
 #------------------------------------------------------------------------------
 # Create the hotspot, start dnsmasq, start the HTTP server.
-def main(address, port, ui_path, delete_connections):
+def main(address, port, ui_path, delete_connections, ignore_connections):
 
     # See if caller wants to delete all existing connections first
     if delete_connections:
         netman.delete_all_wifi_connections()
 
-    # #Check if we are already connected, if so we are done.
-    # if netman.have_active_internet_connection():
-    #     print('Already connected to the internet, nothing to do, exiting.')
-    #     sys.exit()
+    #Check if we are already connected, if so we are done.
+    if not ignore_connections and netman.have_active_internet_connection():
+        print('Already connected to the internet, nothing to do, exiting.')
+        sys.exit()
 
     # Get list of available AP from net man.  
     # Must do this AFTER deleting any existing connections (above),
@@ -300,6 +300,7 @@ if __name__ == "__main__":
     port = PORT
     ui_path = UI_PATH
     delete_connections = True
+    ignore_connections = False
 
     usage = ''\
 f'Command line args: \n'\
@@ -307,10 +308,11 @@ f'  -a <HTTP server address>     Default: {address} \n'\
 f'  -p <HTTP server port>        Default: {port} \n'\
 f'  -u <UI directory to serve>   Default: "{ui_path}" \n'\
 f'  -d Delete Connections First  Default: {delete_connections} \n'\
+f'  -i Ignore Connections        Default: {ignore_connections} \n'\
 f'  -h Show help.\n'
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "a:p:u:r:dh")
+        opts, args = getopt.getopt(sys.argv[1:], "a:p:u:cdh")
     except getopt.GetoptError:
         logger.error(usage)
         sys.exit(2)
@@ -331,11 +333,15 @@ f'  -h Show help.\n'
 
         elif opt in ("-u"):
             ui_path = arg
+        
+        elif opt in {"-i"}:
+            ignore_connections = True
 
     logger.info(f'Address={address}')
     logger.info(f'Port={port}')
     logger.info(f'UI path={ui_path}')
     logger.info(f'Delete Connections={delete_connections}')
-    main(address, port, ui_path, delete_connections)
+    logger.info(f'Ignore Connections={ignore_connections}')
+    main(address, port, ui_path, delete_connections, ignore_connections)
 
 

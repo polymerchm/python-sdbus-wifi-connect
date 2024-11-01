@@ -45,16 +45,24 @@ When the network credentials have been entered, WiFi Connect will disable the ac
 
 # Additions
 
+- The files in the nm_scripts directory are standalone and can be used to manipulate connections
+- The *run.sh* script executes the primary program: *http_server.py*.
+- The *install.sh* script creates a virtual environment and loads all needed modules.
+
 - To allow for other services to recognize the state of the Raspberry Pi, in hotspot mode, the file:
 
-/etc/wifi_state/hotspot
+  - */etc/wifi_state/hotspot*
 
-exists.  Otherwise, the file
+- exists.  Otherwise, the file
 
-/etc/wifi_state/client
+  - */etc/wifi_state/client*
 
-exists
+- exists
+
+- Added the -i option to the *http_server.py* program to allow the user to ignore a *eth0* connection while doing 
+development work.  The program will still manipulate the wlan0 connections.
 
 - net_man_utlites.py has been removed as all of its functions can be accomplished with nmcli
+
 
 

@@ -4,7 +4,8 @@
 #  -a <HTTP server address>     Default: 192.168.42.1
 #  -p <HTTP server port>        Default: 80
 #  -u <UI directory to serve>   Default: "../ui"
-#  -d Delete Connections First  Default: False
+#  -d Delete Connections First  Default: True
+#  -i Ignore Connections        Default: False
 #  -h Show help.
 
 # Check OS we are running on.  NetworkManager only works on Linux.
