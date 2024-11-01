@@ -68,7 +68,11 @@ def RequestHandlerClassFactory(address, ssids):
             # our super class will call do_GET().
             self.address = address
             self.ssids = ssids
-            super(MyHTTPReqHandler, self).__init__(*args, **kwargs)
+            try:
+                super(MyHTTPReqHandler, self).__init__(*args, **kwargs)
+            except ConnectionResetError as e:
+                logger.error("Connection reset")
+
 
         #suppress sever messages
         def log_message(self, format, *args):

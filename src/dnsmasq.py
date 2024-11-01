@@ -46,7 +46,7 @@ def start():
 
     # give a few seconds for the proc to start
     time.sleep(2)
-    print(f'Started dnsmasq, PID={ps.pid}')
+    logger.info(f'Started dnsmasq, PID={ps.pid}')
 
 if __name__ == "__main__":
     stop()
