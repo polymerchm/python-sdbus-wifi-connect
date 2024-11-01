@@ -5,7 +5,6 @@
 #  -p <HTTP server port>        Default: 80
 #  -u <UI directory to serve>   Default: "../ui"
 #  -d Delete Connections First  Default: False
-#  -r Device Registration Code  Default: ""
 #  -h Show help.
 
 # Check OS we are running on.  NetworkManager only works on Linux.

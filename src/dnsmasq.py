@@ -1,11 +1,13 @@
 # start / stop the dnsmasq process
 
 import subprocess, time
+import logging
 
 DEFAULT_GATEWAY="192.168.42.1"
 DEFAULT_DHCP_RANGE="192.168.42.2,192.168.42.254"
 DEFAULT_INTERFACE="wlan0" # use 'ip link show' to see list of interfaces
 
+logger = logging.getLogger('wifi-connect')
 
 def stop():
     #using awk instead of cut to extract the pid
@@ -16,7 +18,7 @@ def stop():
     pid = pid.decode('utf-8')
     pid = pid.strip()
     if 0 < len(pid):
-        print(f"Killing dnsmasq, PID='{pid}'")
+        logger.info(f"Killing dnsmasq, PID='{pid}'")
         ps = subprocess.Popen(f"kill -9 {pid}", shell=True)
         ps.wait()
 

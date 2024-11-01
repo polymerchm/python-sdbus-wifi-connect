@@ -22,6 +22,7 @@ def clear_connections():
     # Get all known connections
     # connections = NetworkManager.Settings.ListConnections()
     
+    
     nm = NetworkManager()
     # Delete the '802-11-wireless' connections
 

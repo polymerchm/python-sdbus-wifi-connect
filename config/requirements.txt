@@ -1,6 +1,9 @@
 certifi==2024.8.30
 charset-normalizer==3.4.0
+ctyped==0.8.0
+cysystemd==1.6.2
 idna==3.10
+logging-journald==0.6.9
 python-dotenv==1.0.1
 requests==2.32.3
 sdbus==0.12.0

@@ -5,14 +5,23 @@
 #
 
 
-# import sdbus
+import sdbus
 from sdbus_block.networkmanager import (
     ConnectionType,
     NetworkConnectionSettings,
     NetworkManagerSettings,
+    NetworkManager,  
+    NetworkDeviceGeneric,
+    DeviceType,
 )
 
 import os
+from enum import Enum
+import logging
+from dotenv import dotenv_values
+
+logger = logging.getLogger('wifi-connect')
+
 
 
 
@@ -54,6 +63,31 @@ def get_connections(ifname: str, dev_type: str) -> dict[int,tuple[str, str]] | N
         return None
     # Returns the connections
     return conns
+
+def title(enum: Enum) -> str:
+    """Get the name of an enum: 1st character is uppercase, rest lowercase"""
+    return enum.name.title()
+
+
+### Run this before we run 'wifi-connect' to clear out pre-configured networks
+def clear_connections():
+    # Get all known connections
+    # connections = NetworkManager.Settings.ListConnections()
+    
+    
+    nm = NetworkManager()
+    # Delete the '802-11-wireless' connections
+
+    device_paths =  nm.devices
+
+    for device_path in device_paths:
+        generic_dev = NetworkDeviceGeneric(device_path)
+
+        dev = generic_dev.interface
+        type = title(DeviceType(generic_dev.device_type))
+        if "Wifi" in type:
+            generic_dev.delete()
+            logger.info(f"deleted {dev}")
 
 
 def get_serial()->str:
@@ -110,5 +144,13 @@ def create_state_file(value: str)->bool:
         return False # system error
     return True
 
-if __name__ == '__main__':
-    print(create_state_file('client'))
+def get_config():
+    config = {}
+
+    env = dotenv_values('.env.global', verbose=True)
+    for (key,val) in env.items():
+        config[key] = string_or_numeric(val)
+    return config
+
+    if __name__ == '__main__':
+        print(create_state_file('client'))

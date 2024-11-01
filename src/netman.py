@@ -26,25 +26,22 @@ from sdbus_block.networkmanager.enums import DeviceType as DType
 import uuid, os, sys, time, socket
 from enum import Enum
 from utility import get_connections
-from utility import ( get_serial, string_or_numeric, create_state_file)
-
-from dotenv import dotenv_values
-
+from utility import ( get_serial, string_or_numeric, create_state_file, get_config)
+import logging
 
 
 HOTSPOT_CONNECTION_NAME = 'dawnlite'
 GENERIC_CONNECTION_NAME = 'python-wifi-connect'
-DEBUG = True
 
-CONFIG = {}
 
-env = dotenv_values('.env.global', verbose=True)
-for (key,val) in env.items():
-    CONFIG[key] = string_or_numeric(val)
+CONFIG = get_config()
+DEBUG = CONFIG['DEBUG'] == 'True'
 
 sdbus.set_default_bus(sdbus.sd_bus_open_system())
 nm = NetworkManager()
 nm_settings = NetworkManagerSettings(sdbus.get_default_bus())
+
+logger = logging.getLogger('wifi-connect')
 
 def title(enum: Enum) -> str:
     """Get the name of an enum: 1st character is uppercase, rest lowercase"""
@@ -63,7 +60,7 @@ def have_active_internet_connection(host: str="8.8.8.8", port: int=53, timeout: 
      socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
      return True
    except Exception as e:
-     #print(f"Exception: {e}")
+     logger.error(f"Exception: {e}")
      return False
 
 
@@ -185,7 +182,7 @@ def get_list_of_access_points():
                     ap.rsn_flags & WpaSecurityFlags.AUTH_802_1X:
                 security = NM_SECURITY_ENTERPRISE
 
-            #print(f'{ap.Ssid:15} Flags=0x{ap.Flags:X} WpaFlags=0x{ap.WpaFlags:X} RsnFlags=0x{ap.RsnFlags:X}')
+            logger.debug(f'{ap.ssid.decode():15} Flags=0x{ap.flags:X} WpaFlags=0x{ap.wpa_flags:X} RsnFlags=0x{ap.rsn_flags:X}')
 
             # Decode our flag into a display string
             security_str = ''
@@ -213,7 +210,7 @@ def get_list_of_access_points():
 
             ssids.append(entry)
 
-    #print(f'Available SSIDs: {ssids}')
+    logger.debug(f'Available SSIDs: {ssids}')
     return ssids
 
 
@@ -246,10 +243,10 @@ CONN_TYPE_SEC_ENTERPRISE = 'ENTERPRISE' # MIT SECURE
 def connect_to_AP(conn_type=None, conn_name=GENERIC_CONNECTION_NAME, \
         ssid=None, username=None, password=None):
 
-    #print(f"connect_to_AP conn_type={conn_type} conn_name={conn_name} ssid={ssid} username={username} password={password}")
+    logger.debug(f"connect_to_AP conn_type={conn_type} conn_name={conn_name} ssid={ssid} username={username} password={password}")
 
     if conn_type is None or ssid is None:
-        print(f'connect_to_AP() Error: Missing args conn_type or ssid')
+        logger.error(f'connect_to_AP() Error: Missing args conn_type or ssid')
         return False
 
     bSSID = ssid.encode('utf-8')
@@ -346,12 +343,13 @@ def connect_to_AP(conn_type=None, conn_name=GENERIC_CONNECTION_NAME, \
         #print(f"new connection {conn_dict} type={conn_str}")
 
         if nm_settings.get_connections_by_id(conn_name):
-            print(f'Connection "{conn_name}" exists, remove it first')
-            print(f'Run: nmcli connection delete "{conn_name}"')
-            return ""
+            delete_all_wifi_connections()
+            # logger.warning(f'Connection "{conn_name}" exists, remove it first')
+            # logger.warning(f'Run: nmcli connection delete "{conn_name}"')
+            # return ""
         
         nm_settings.add_connection(conn_dict)
-        print(f"Added connection {conn_name} of type {conn_str}")
+        logger.info(f"Added connection {conn_name} of type {conn_str}")
 
         # Now find this connection and its device
         connections_paths = nm_settings.connections # returns the paths to the connections
@@ -378,7 +376,7 @@ def connect_to_AP(conn_type=None, conn_name=GENERIC_CONNECTION_NAME, \
                 active_connection = generic.active_connection
                 break
         else:
-            print(f"connect_to_AP() Error: No suitable and available {ctype} device found.")
+            logger.error(f"connect_to_AP() Error: No suitable and available {ctype} device found.")
             return False
 
         # check to see if wlan0 is active and if so, deactivate the connection.
@@ -388,34 +386,35 @@ def connect_to_AP(conn_type=None, conn_name=GENERIC_CONNECTION_NAME, \
             nm.deactivate_connection(active_connection)
         dev_object = nm.get_device_by_ip_iface(dev)
         nm.activate_connection(conn_path, dev_object, "/")
-        print(f"Activated connection={conn_name}.")
+        logger.info(f"Activated connection={conn_name}.")
 
         # Wait for ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
-        print(f'Waiting for connection to become active...')
+        logger.info(f'Waiting for connection to become active...')
         loop_count = 0
 
          
         while NetworkDeviceWireless(dev_object).state != DeviceState.ACTIVATED:
-            #print(f'dev.State={dev.State}')
+            logger.debug(f'dev.state={NetworkDeviceWireless(dev_object).state}')
             time.sleep(1)
             loop_count += 1
             if loop_count > 30: # only wait 30 seconds max
                 break
 
         if NetworkDeviceWireless(dev_object).state == DeviceState.ACTIVATED:
-            print(f'Connection {conn_name} is live.')
+            logger.info(f'Connection {conn_name} is live.')
 
-            if create_state_file('client'):
-                print('Client Flag file create')
+            file_type = 'hotspot' if conn_str == 'HOTSPOT' else 'client'
+            if create_state_file(file_type):
+                logger.info(f'{file_type} flag file create')
             else:
-                print('Could not create Client flag file')
+                logger.error(f'Could not create {file_type} flag file')
 
             return True
 
     except Exception as e:
-        print(f'Connection error {e}')
+        logger.error(f'Connection error {e}')
 
-    print(f'Connection {conn_name} failed.')
+    logger.error(f'Connection {conn_name} failed.')
     return False
 
 if __name__ == "__main__":

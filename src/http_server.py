@@ -4,6 +4,27 @@ import os, getopt, sys, json, atexit
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import parse_qs
 from io import BytesIO
+import logging
+from logging_journald import JournaldLogHandler, check_journal_stream
+from utility import get_config
+
+CONFIG = get_config()
+
+DEBUG = CONFIG['DEBUG'] == 'True'
+
+if (
+    # Check if program running as systemd service
+    check_journal_stream() or
+    # Check if journald socket is available
+    JournaldLogHandler.SOCKET_PATH.exists()
+):
+    LOG_HANDLERS = [JournaldLogHandler(), logging.StreamHandler(sys.stdout)]
+
+logging.basicConfig(level=logging.INFO, handlers=LOG_HANDLERS)
+logger = logging.getLogger("wifi-connect")
+
+if DEBUG:
+    logger.setLevel(logging.DEBUG)
 
 # Local modules
 import netman
@@ -18,7 +39,7 @@ UI_PATH = '../ui'
 #------------------------------------------------------------------------------
 # called at exit
 def cleanup():
-    print("Cleaning up prior to exit.")
+    logger.info("Cleaning up prior to exit.")
     dnsmasq.stop()
     netman.stop_hotspot()
 
@@ -38,7 +59,7 @@ class MyHTTPServer(HTTPServer):
 # A custom http request handler class factory.
 # Handle the GET and POST requests from the UI form and JS.
 # The class factory allows us to pass custom arguments to the handler.
-def RequestHandlerClassFactory(address, ssids, rcode):
+def RequestHandlerClassFactory(address, ssids):
 
     class MyHTTPReqHandler(SimpleHTTPRequestHandler):
 
@@ -47,8 +68,14 @@ def RequestHandlerClassFactory(address, ssids, rcode):
             # our super class will call do_GET().
             self.address = address
             self.ssids = ssids
-            self.rcode = rcode
             super(MyHTTPReqHandler, self).__init__(*args, **kwargs)
+
+        #suppress sever messages
+        def log_message(self, format, *args):
+            if not DEBUG:
+                return
+            else:
+                super().log_message(format, *args)
 
         def de_byte_values(self, object_array):
             """
@@ -66,7 +93,7 @@ def RequestHandlerClassFactory(address, ssids, rcode):
         # See if this is a specific request, otherwise let the server handle it.
         def do_GET(self):
 
-            print(f'do_GET {self.path}')
+            logger.debug(f'do_GET {self.path}')
 
             # Handle the hotspot starting and a computer connecting to it,
             # we have to return a redirect to the gateway to get the 
@@ -74,26 +101,16 @@ def RequestHandlerClassFactory(address, ssids, rcode):
             if '/hotspot-detect.html' == self.path:
                 self.send_response(301) # redirect
                 new_path = f'http://{self.address}/'
-                print(f'redirecting to {new_path}')
+                logger.debug(f'redirecting to {new_path}')
                 self.send_header('Location', new_path)
                 self.end_headers()
 
             if '/generate_204' == self.path:
                 self.send_response(301) # redirect
                 new_path = f'http://{self.address}/'
-                print(f'redirecting to {new_path}')
+                logger.debug(f'redirecting to {new_path}')
                 self.send_header('Location', new_path)
                 self.end_headers()
-
-            # Handle a REST API request to return the device registration code
-            if '/regcode' == self.path:
-                self.send_response(200)
-                self.end_headers()
-                response = BytesIO()
-                response.write(self.rcode.encode('utf-8'))
-                print(f'GET {self.path} returning: {response.getvalue()}')
-                self.wfile.write(response.getvalue())
-                return
 
             # Handle a REST API request to return the list of SSIDs
             if '/networks' == self.path:
@@ -116,7 +133,7 @@ def RequestHandlerClassFactory(address, ssids, rcode):
                 """
                 ssids = self.de_byte_values(ssids)
                 response.write(json.dumps(ssids).encode('utf-8'))
-                print(f'GET {self.path} returning: {response.getvalue()}')
+                logger.debug(f'GET {self.path} returning: {response.getvalue()}')
                 self.wfile.write(response.getvalue())
                 return
 
@@ -138,7 +155,7 @@ def RequestHandlerClassFactory(address, ssids, rcode):
             self.end_headers()
             response = BytesIO()
             fields = parse_qs(body.decode('utf-8'))
-            #print(f'POST received: {fields}')
+            logger.debug(f'POST received: {fields}')
 
             # Parse the form post
             FORM_SSID = 'ssid'
@@ -147,7 +164,7 @@ def RequestHandlerClassFactory(address, ssids, rcode):
             FORM_PASSWORD = 'passphrase'
 
             if FORM_SSID not in fields:
-                print(f'Error: POST is missing {FORM_SSID} field.')
+                logger.error(f'Error: POST is missing {FORM_SSID} field.')
                 return
 
             ssid = fields[FORM_SSID][0]
@@ -193,10 +210,10 @@ def RequestHandlerClassFactory(address, ssids, rcode):
 
             # Handle success or failure of the new connection
             if success:
-                print(f'Connected!  Exiting app.')
+                logger.info(f'Connected!  Exiting app.')
                 sys.exit()
             else:
-                print(f'Connection failed, restarting the hotspot.')
+                logger.warning(f'Connection failed, restarting the hotspot.')
 
                 # Update the list of SSIDs since we are not connected
                 self.ssids = netman.get_list_of_access_points()
@@ -209,16 +226,16 @@ def RequestHandlerClassFactory(address, ssids, rcode):
 
 #------------------------------------------------------------------------------
 # Create the hotspot, start dnsmasq, start the HTTP server.
-def main(address, port, ui_path, rcode, delete_connections):
+def main(address, port, ui_path, delete_connections):
 
     # See if caller wants to delete all existing connections first
     if delete_connections:
         netman.delete_all_wifi_connections()
 
-    # Check if we are already connected, if so we are done.
-    if netman.have_active_internet_connection():
-        print('Already connected to the internet, nothing to do, exiting.')
-        sys.exit()
+    # #Check if we are already connected, if so we are done.
+    # if netman.have_active_internet_connection():
+    #     print('Already connected to the internet, nothing to do, exiting.')
+    #     sys.exit()
 
     # Get list of available AP from net man.  
     # Must do this AFTER deleting any existing connections (above),
@@ -228,7 +245,7 @@ def main(address, port, ui_path, rcode, delete_connections):
 
     # Start the hotspot
     if not netman.start_hotspot():
-        print('Error starting hotspot, exiting.')
+        logger.error('Error starting hotspot, exiting.')
         sys.exit(1)
 
     # Start dnsmasq (to advertise us as a router so captured portal pops up
@@ -237,7 +254,7 @@ def main(address, port, ui_path, rcode, delete_connections):
 
     # Find the ui directory which is up one from where this file is located.
     web_dir = os.path.join(os.path.dirname(__file__), ui_path)
-    print(f'HTTP serving directory: {web_dir} on {address}:{port}')
+    logger.info(f'HTTP serving directory: {web_dir} on {address}:{port}')
 
     # Change to this directory so the HTTPServer returns the index.html in it 
     # by default when it gets a GET.
@@ -247,11 +264,11 @@ def main(address, port, ui_path, rcode, delete_connections):
     server_address = (address, port)
 
     # Custom request handler class (so we can pass in our own args)
-    MyRequestHandlerClass = RequestHandlerClassFactory(address, ssids, rcode)
+    MyRequestHandlerClass = RequestHandlerClassFactory(address, ssids)
 
     # Start an HTTP server to serve the content in the ui dir and handle the 
     # POST request in the handler class.
-    print(f'Waiting for a connection to our hotspot {netman.get_hotspot_SSID()} ...')
+    logger.info(f'Waiting for a connection to our hotspot {netman.get_hotspot_SSID()} ...')
     httpd = MyHTTPServer(web_dir, server_address, MyRequestHandlerClass)
     try:
         httpd.serve_forever()
@@ -278,8 +295,7 @@ if __name__ == "__main__":
     address = ADDRESS
     port = PORT
     ui_path = UI_PATH
-    delete_connections = False
-    rcode = ''
+    delete_connections = True
 
     usage = ''\
 f'Command line args: \n'\
@@ -287,13 +303,12 @@ f'  -a <HTTP server address>     Default: {address} \n'\
 f'  -p <HTTP server port>        Default: {port} \n'\
 f'  -u <UI directory to serve>   Default: "{ui_path}" \n'\
 f'  -d Delete Connections First  Default: {delete_connections} \n'\
-f'  -r Device Registration Code  Default: "" \n'\
 f'  -h Show help.\n'
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "a:p:u:r:dh")
     except getopt.GetoptError:
-        print(usage)
+        logger.error(usage)
         sys.exit(2)
 
     for opt, arg in opts:
@@ -304,9 +319,6 @@ f'  -h Show help.\n'
         elif opt in ("-d"):
            delete_connections = True
 
-        elif opt in ("-r"):
-            rcode = arg
-
         elif opt in ("-a"):
             address = arg
 
@@ -316,11 +328,10 @@ f'  -h Show help.\n'
         elif opt in ("-u"):
             ui_path = arg
 
-    print(f'Address={address}')
-    print(f'Port={port}')
-    print(f'UI path={ui_path}')
-    print(f'Device registration code={rcode}')
-    print(f'Delete Connections={delete_connections}')
-    main(address, port, ui_path, rcode, delete_connections)
+    logger.info(f'Address={address}')
+    logger.info(f'Port={port}')
+    logger.info(f'UI path={ui_path}')
+    logger.info(f'Delete Connections={delete_connections}')
+    main(address, port, ui_path, delete_connections)
 
 
